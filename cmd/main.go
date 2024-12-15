@@ -29,6 +29,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
@@ -94,6 +95,7 @@ func main() {
 
 	webhookServer := webhook.NewServer(webhook.Options{
 		TLSOpts: tlsOpts,
+		Port:    9443,
 	})
 
 	// Metrics endpoint is enabled in 'config/default/kustomization.yaml'. The Metrics options configure the server.
@@ -120,13 +122,14 @@ func main() {
 		metricsServerOptions.FilterProvider = filters.WithAuthenticationAndAuthorization
 	}
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		Metrics:                metricsServerOptions,
-		WebhookServer:          webhookServer,
-		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "a9ab8f2d.io",
+	mgrOpts := ctrl.Options{
+		Scheme:                     scheme,
+		Metrics:                    metricsServerOptions,
+		WebhookServer:              webhookServer,
+		HealthProbeBindAddress:     probeAddr,
+		LeaderElection:             enableLeaderElection,
+		LeaderElectionID:           "fcdfce80.io",
+		LeaderElectionResourceLock: "leases",
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly
@@ -138,7 +141,18 @@ func main() {
 		// if you are doing or is intended to do any operation such as perform cleanups
 		// after the manager stops then its usage might be unsafe.
 		// LeaderElectionReleaseOnCancel: true,
-	})
+	}
+
+	if watchNamespace, namespaced := getWatchNamespace(); namespaced {
+		mgrOpts.Cache = cache.Options{
+			DefaultNamespaces: map[string]cache.Config{
+				watchNamespace: cache.Config{},
+			},
+		}
+		setupLog.Info("WATCH_NAMESPACE is configured", "ns", watchNamespace)
+	}
+
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), mgrOpts)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
@@ -153,6 +167,7 @@ func main() {
 	}
 	if err = (&controller.PrivateLoadZoneReconciler{
 		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("PrivateLoadZone"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PrivateLoadZone")
@@ -160,6 +175,7 @@ func main() {
 	}
 	if err = (&controller.TestRunReconciler{
 		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("TestRun"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "TestRun")
@@ -181,4 +197,10 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func getWatchNamespace() (string, bool) {
+	var watchNamespaceEnvVar = "WATCH_NAMESPACE"
+
+	return os.LookupEnv(watchNamespaceEnvVar)
 }
