@@ -5,5 +5,9 @@ metadata:
     app.kubernetes.io/name: k6-operator
     app.kubernetes.io/managed-by: kustomize
   name: privateloadzone-sample
+  namespace: foo
 spec:
-  # TODO(user): Add fields here
+  token: grafana-k6-token
+  resources:
+    cpu: 200m
+    memory: 512Mi

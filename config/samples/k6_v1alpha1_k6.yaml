@@ -1,10 +1,8 @@
+---
 apiVersion: k6.io/v1alpha1
 kind: TestRun
 metadata:
-  labels:
-    app.kubernetes.io/name: k6-operator
-    app.kubernetes.io/managed-by: kustomize
-  name: testrun-sample
+  name: k6-sample
 spec:
   parallelism: 4
   script:
