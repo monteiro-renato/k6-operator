@@ -20,4 +20,13 @@ resources:
   kind: K6
   path: github.com/grafana/k6-operator/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: io
+  group: k6
+  kind: PrivateLoadZone
+  path: github.com/grafana/k6-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"
