@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- k6_v1alpha1_k6.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples

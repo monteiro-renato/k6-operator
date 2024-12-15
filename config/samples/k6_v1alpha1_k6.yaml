@@ -1,0 +1,9 @@
+apiVersion: k6.io/v1alpha1
+kind: K6
+metadata:
+  labels:
+    app.kubernetes.io/name: k6-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: k6-sample
+spec:
+  # TODO(user): Add fields here
