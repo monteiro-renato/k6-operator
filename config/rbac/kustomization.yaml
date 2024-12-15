@@ -26,6 +26,3 @@ resources:
 - testrun_viewer_role.yaml
 - privateloadzone_editor_role.yaml
 - privateloadzone_viewer_role.yaml
-- k6_editor_role.yaml
-- k6_viewer_role.yaml
-
